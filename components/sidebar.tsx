@@ -964,8 +964,8 @@ export default function Sidebar({
         </svg>
         <div style={{
           display: isCollapsedSidebar ? "none" : "block"
-        }} className="mr-2 rounded-full bg-accent opacity-50 hover:opacity-100 w-6 h-6 flex items-center overflow-hidden relative">
-          <GitBranch className="p-[1px] cursor-pointer fill-[hsl(var(--card))] stroke-[hsl(var(--card))] relative top-[3px]" />
+        }} className="mr-2 opacity-50 hover:opacity-100 w-6 h-6 flex items-center justify-center overflow-hidden relative">
+          <GitBranch className="p-[1px] cursor-pointer relative" />
         </div>
       </div>
       <AnimatePresence>

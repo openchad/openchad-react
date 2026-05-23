@@ -1,6 +1,6 @@
 {
   "name": "openchad-react",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "UI, components and utilities for OpenChad",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
