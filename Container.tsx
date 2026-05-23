@@ -73,16 +73,18 @@ export interface DefaultTab {
   tabs: Tab[];
 }
 
-export interface AppsProps {
+export interface Project {
   defaultTab: DefaultTab;
   appRegistry?: Record<string, React.ComponentType<AppInfo>>;
   iconRegistry?: Record<string, LucideIcon>;
+  projectName: string;
+  projectIcon: React.ComponentType;
   size?: number[];
 }
 import { hideSplashScreen } from "vite-plugin-splash-screen/runtime";
 import { generateIdFromString } from './index'
 
-export default function Container({ Apps }: { Apps: AppsProps }) {
+export default function Container({ Apps }: { Apps: Project }) {
   if (Apps.defaultTab.tabs.length === 0) {
     throw new Error("Apps.defaultTab.tabs is empty");
   }
@@ -688,6 +690,8 @@ export default function Container({ Apps }: { Apps: AppsProps }) {
         <aside className="items-start x hidden md:flex bg-[hsl(var(--bg))] relative z-10">
           {/* <VerticalTab menus={menus} /> */}
           <Sidebar
+            projectName={Apps.projectName}
+            ProjectIcon={Apps.projectIcon}
             workspace={workspace}
             setIsSwitchWorkspace={setIsSwitchWorkspace}
             showSearchDialog={showSearchDialog}

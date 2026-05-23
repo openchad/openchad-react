@@ -1,4 +1,4 @@
-import Container, { type AppsProps } from "./Container"
+import Container, { type Project } from "./Container"
 import type { AppInfo } from "./utils/utils"
 import { usePython } from "./components/usePython"
 import { sha256 } from 'js-sha256';
@@ -8,6 +8,7 @@ import { useFolderImpl } from "./components/useFolder";
 import useElementSize from "./components/hooks/useElementSize";
 import { useGlobal as useGlobalImpl } from "./components/useGlobal";
 import { MessageState } from "./components/default-page";
+import { OpenChadIcon } from "./components/open-chad-icon";
 
 function generateIdFromString(input: string): string {
     /**
@@ -61,6 +62,7 @@ const useGlobal = <T = Record<string, unknown>>(
     return useGlobalImpl<T>(tb, options);
 };
 
+
 export {
     Container,
     useDatabase,
@@ -71,7 +73,8 @@ export {
     useGlobal,
     generateIdFromString,
     usePython,
+    OpenChadIcon,
     type AppInfo,
-    type AppsProps,
+    type Project,
     type MessageState
 } 
