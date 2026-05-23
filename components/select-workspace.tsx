@@ -90,6 +90,12 @@ export function SelectWorkspace({ workspaces, setWorkspace }: { workspaces: stri
                             </EmptyDescription>
                         )}
                     </EmptyHeader>
+                    
+                    <EmptyContent>
+                        <div className="flex gap-2">
+                            <Button onClick={() => setIsCreating(true)} size={isSmallHeight ? "sm" : "default"}>Create Workspace</Button>
+                        </div>
+                    </EmptyContent>
                     <Button variant="link" asChild className="text-muted-foreground" size="sm">
                         <a onClick={(e) => {
                             e.preventDefault();
