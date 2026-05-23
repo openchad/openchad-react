@@ -20,6 +20,8 @@ import {
 } from "./ui"
 import clsx from "clsx"
 import useElementSize from "./hooks/useElementSize"
+import { openUrl } from '@tauri-apps/plugin-opener'
+const isTauri = typeof window !== "undefined" && !!(window as any).__TAURI__;
 
 const WorkspaceLogo = ({ className }: { className?: string }) => (
     <svg
@@ -88,14 +90,15 @@ export function SelectWorkspace({ workspaces, setWorkspace }: { workspaces: stri
                             </EmptyDescription>
                         )}
                     </EmptyHeader>
-                    <EmptyContent>
-                        <div className="flex gap-2">
-                            <Button onClick={() => setIsCreating(true)} size={isSmallHeight ? "sm" : "default"}>Create Workspace</Button>
-                            <Button variant="outline" size={isSmallHeight ? "sm" : "default"}>Import Workspace</Button>
-                        </div>
-                    </EmptyContent>
                     <Button variant="link" asChild className="text-muted-foreground" size="sm">
-                        <a href="#">
+                        <a onClick={(e) => {
+                            e.preventDefault();
+                            if (isTauri) {
+                                openUrl('https://openchad.github.io/docs/customization/custom-app.html')
+                            } else {
+                                window.open('https://openchad.github.io/docs/customization/custom-app.html', '_blank')
+                            }
+                        }} href="#">
                             Learn More <ArrowUpRightIcon className="w-4 h-4 ml-1" />
                         </a>
                     </Button>
@@ -187,10 +190,10 @@ export function SelectWorkspace({ workspaces, setWorkspace }: { workspaces: stri
                             <p className="text-accent/50 text-sm">Pick a workspace to start your session</p>
                         )}
                     </div>
-                    <div 
+                    <div
                         className={clsx(
-                            isSmallWidth 
-                                ? "flex flex-col gap-3 max-w-md px-6 w-full animate-in zoom-in-95 duration-500 delay-100 fade-in fill-mode-backwards" 
+                            isSmallWidth
+                                ? "flex flex-col gap-3 max-w-md px-6 w-full animate-in zoom-in-95 duration-500 delay-100 fade-in fill-mode-backwards"
                                 : "grid gap-6 max-w-4xl px-8 w-full animate-in zoom-in-95 duration-500 delay-100 fade-in fill-mode-backwards"
                         )}
                         style={isSmallWidth ? undefined : {
