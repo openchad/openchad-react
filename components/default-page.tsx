@@ -292,17 +292,17 @@ export default function DefaultPage(AppInfo: AppInfo) {
                                     "flex flex-col relative overflow-x-hidden pt-5 w-full px-2",
                                     width < 800 ? 'max-w-full small-content' : 'max-w-[40vw]',
                                 )}>
-                                    <MessageContainer 
-                                        workspace={workspace} 
-                                        isStreaming={messageState.isStreaming} 
-                                        request={request} 
-                                        activeId={messageState.isStreaming ? messageState.activeId : null} 
-                                        tabId={AppInfo.tabId} 
+                                    <MessageContainer
+                                        workspace={workspace}
+                                        isStreaming={messageState.isStreaming}
+                                        request={request}
+                                        activeId={messageState.isStreaming ? messageState.activeId : null}
+                                        tabId={AppInfo.tabId}
                                         useDatabase={(tb, options) => {
                                             return AppInfo.useTabDatabase(tb, options);
-                                        }} 
-                                        index={0} 
-                                        branch={sha256("0").slice(0, 32)} 
+                                        }}
+                                        index={0}
+                                        branch={sha256("0").slice(0, 32)}
                                     />
                                     {messageState.errorMsg.length > 0 && (
                                         <div className="bg-red-300 dark:bg-red-900 text-red-500 dark:text-red-300 p-2 rounded-md border border-red-500 mt-2 text-break break-all">
@@ -362,6 +362,12 @@ export default function DefaultPage(AppInfo: AppInfo) {
                                 if (typeof branchId === "string" && typeof targetTable === "string" && !isNaN(branchIndex)) {
                                     await request(value, targetTable, branchId, branchIndex, 0);
                                 }
+                            } else {
+                                setMessageState((prev) => ({
+                                    ...prev,
+                                    errorMsg: "No Model Selected",
+                                    initialized: true,
+                                }));
                             }
                         }
                     }}
