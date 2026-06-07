@@ -2,13 +2,17 @@ import Composer from "./composer";
 import { useRef, useLayoutEffect, useState, useEffect } from "react";
 import useElementSize from "./hooks/useElementSize";
 import clsx from "clsx";
-import type { AppInfo } from "../utils/utils";
+import type { Model } from "../utils/utils";
 import { usePython } from "./usePython";
 import MessageContainer from "./message-container";
 import { sha256 } from "js-sha256";
 import ModelSelection from "./model-selection";
 import { ArrowDown } from "lucide-react";
-import { generateIdFromString } from "../index";
+import { generateIdFromString, useDatabase } from "../index";
+import { useDatabaseImpl } from "./useDatabase";
+import { useSettings } from "./useSettings";
+import { useSnapshot } from "valtio";
+import { Workspace } from "../utils/state";
 
 export interface MessageState {
     title: string | null;
@@ -20,16 +24,14 @@ export interface MessageState {
 }
 
 
-export default function DefaultPage(AppInfo: AppInfo) {
-    const { layout } = AppInfo.useTheme();
-    const { workspace } = AppInfo.useWorkspace();
+export default function Chat({ id, open }: { id: string, open: boolean }) {
+    const { workspace } = useSnapshot(Workspace);
+    const { settings } = useSettings();
     const composerTextareaRef = useRef<HTMLTextAreaElement>(null);
     const msgBottomRef = useRef<HTMLDivElement>(null);
     const [scrollContainerRef] = useElementSize<HTMLDivElement>();
-    const [model, setModel] = AppInfo.useModel();
-    const tabId = AppInfo.tabId;
-    const activeId = AppInfo.useActiveTabId();
-    const [messageState, setMessageState] = AppInfo.useTabDatabase<MessageState>("message_state", {
+    const tb = generateIdFromString(id + "/" + "message_state");
+    const [messageState, setMessageState] = useDatabaseImpl<MessageState>(tb, {
         initialValue: {
             title: null,
             activeId: "",
@@ -40,6 +42,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
         },
     });
     const { pyInvoke } = usePython();
+    const [model, setModel] = useDatabaseImpl<Model>("model", { initialValue: { name: null, id: null } });
     const [containerRef, { width, height }] = useElementSize<HTMLDivElement>();
     const [mounted, setMounted] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -47,24 +50,15 @@ export default function DefaultPage(AppInfo: AppInfo) {
     const isStreamingRef = useRef(messageState.isStreaming);
     const wasNearBottomRef = useRef(true);
     const [justOpen, setJustOpen] = useState(true);
-    const title = AppInfo.useTitle();
-    const currentTab = AppInfo.useTab()
-    useEffect(() => {
-        if (title) return;
-        const _t = messageState.title;
-        if (mounted && _t && typeof currentTab?.childrenProps !== "undefined") {
-            AppInfo.setTitle(_t);
-        }
-    }, [messageState.title, title, mounted]);
+
     useEffect(() => {
         if (mounted) {
             (async () => {
                 const check = await pyInvoke("v1/check");
                 if (!check.result) {
-                    const tb = generateIdFromString(tabId + "/" + "message_state");
                     await pyInvoke('sqlite', {
                         command: 'query',
-                        db: workspace,
+                        db: workspace ?? "global",
                         table: tb,
                         sql: `UPDATE ${tb} SET _v = 'false' WHERE id = 'isStreaming'`
                     });
@@ -73,7 +67,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
         }
     }, [mounted]);
     useEffect(() => {
-        if (activeId == tabId) {
+        if (open) {
             setTimeout(() => {
                 scrollToBottom('instant');
                 setJustOpen(false);
@@ -81,7 +75,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
         } else {
             setJustOpen(true);
         }
-    }, [activeId]);
+    }, [open]);
     useEffect(() => {
         isStreamingRef.current = messageState.isStreaming;
     }, [messageState.isStreaming]);
@@ -116,7 +110,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
         }
     }, [messageState.isStreaming, messageState.initialized]);
     async function request(query: string, targetTable: string, branchId: string, index: number | string, response_branch: number) {
-        const activeId = AppInfo.tabId + "_response_" + branchId + "_" + response_branch + "_" + index;
+        const activeId = id + "_response_" + branchId + "_" + response_branch + "_" + index;
         if (messageState.activeId === activeId) {
             return;
         }
@@ -132,14 +126,14 @@ export default function DefaultPage(AppInfo: AppInfo) {
                 query: query,
                 stream: true,
                 model: model.id,
-                tab_id: AppInfo.tabId,
+                tab_id: id,
                 branch_id: branchId,
                 index: index,
                 response_branch: response_branch,
                 tb: targetTable,
-                workspace: workspace,
-                app_name: AppInfo.appname,
-                pipeline: AppInfo.settings["Others/app_settings/string.pipeline"]?.value || "openchad/chat"
+                workspace: workspace ?? "global",
+                app_name: "",
+                pipeline: settings["Others/app_settings/string.pipeline"]?.value || "openchad/chat"
             });
             if (streamRes && typeof streamRes === 'object' && Symbol.asyncIterator in streamRes) {
                 var iter = 0;
@@ -161,7 +155,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
     useLayoutEffect(() => {
         if (!mounted) return;
         const updateHeight = () => {
-            const emptyContainer = document.getElementById(AppInfo.tabId + "_empty_message_container");
+            const emptyContainer = document.getElementById(id + "_empty_message_container");
             if (!emptyContainer || !msgBottomRef.current) return;
             const lastValidIndex = emptyContainer.getAttribute("data-last-valid-index");
             if (!lastValidIndex) return;
@@ -188,7 +182,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
         let observedMessageId: string | null = null;
         let checkInterval: number | null = null;
         const observeLastMessage = () => {
-            const emptyContainer = document.getElementById(AppInfo.tabId + "_empty_message_container");
+            const emptyContainer = document.getElementById(id + "_empty_message_container");
             const idx = emptyContainer?.getAttribute("data-last-valid-index");
             if (!idx || idx === observedMessageId) return;
             const el = document.getElementById("container_" + idx);
@@ -267,7 +261,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
             <ModelSelection
                 model={model}
                 setModel={setModel}
-                layout={layout}
+                layout={"leftToRight"}
             />
             <div style={{
                 height: width < 800 || height < 650 || messageState.initialized ? `${height}px` : `${height * 0.2}px`,
@@ -293,13 +287,14 @@ export default function DefaultPage(AppInfo: AppInfo) {
                                     width < 800 ? 'max-w-full small-content' : 'max-w-[40vw]',
                                 )}>
                                     <MessageContainer
-                                        workspace={workspace}
+                                        workspace={workspace ?? "global"}
                                         isStreaming={messageState.isStreaming}
                                         request={request}
                                         activeId={messageState.isStreaming ? messageState.activeId : null}
-                                        tabId={AppInfo.tabId}
+                                        tabId={id}
                                         useDatabase={(tb, options) => {
-                                            return AppInfo.useTabDatabase(tb, options);
+                                            const hashed = generateIdFromString(id + "/" + tb);
+                                            return useDatabaseImpl(hashed, options);
                                         }}
                                         index={0}
                                         branch={sha256("0").slice(0, 32)}
@@ -336,7 +331,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
                     </button>
                 )}
                 <Composer
-                    workspace={workspace}
+                    workspace={workspace ?? "global"}
                     onSubmit={async (value: string) => {
                         if (messageState.isStreaming) {
                             await pyInvoke(
@@ -346,6 +341,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
                             setMessageState((prev) => ({
                                 ...prev,
                                 isStreaming: false,
+                                activeId: "",
                             }));
                         } else {
                             if (model.id && value.trim().length > 0) {
@@ -355,7 +351,7 @@ export default function DefaultPage(AppInfo: AppInfo) {
                                     isStreaming: true,
                                     initialized: true,
                                 }));
-                                const el = await waitForElement(AppInfo.tabId + "_empty_message_container");
+                                const el = await waitForElement(id + "_empty_message_container");
                                 const branchId = el?.getAttribute("data-branch-id");
                                 const targetTable = el?.getAttribute("data-tb");
                                 const branchIndex = Number(el?.getAttribute("data-branch-index") ?? 0);
